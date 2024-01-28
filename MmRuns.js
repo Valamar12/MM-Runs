@@ -2,7 +2,7 @@ const axios = require('axios');
 const { google } = require('googleapis');
 
 // Define the character names
-const characterNames = ['nialo', 'nialomd', 'nialodrd']; // Replace 'character2', 'character3', etc. with your actual character names
+const characterNames = ['nialo', 'nialomd', 'nialodrd', 'ethernialo', 'nialodormu', 'nialofist', 'nialopal', 'nialoded', 'nialoshot', 'nialowr', 'nialosham', 'ashatara']; // Replace 'character2', 'character3', etc. with your actual character names
 
 // Define an async function
 async function fetchAndWriteData(characterName) {
@@ -57,16 +57,11 @@ async function fetchAndWriteData(characterName) {
     // Convert the response to a flat array of IDs
     const existingIds = idResponse.data.values ? idResponse.data.values.flat() : [];
 
-    console.log('Existing IDs:', existingIds); // Log the existing IDs
-
     // Filter out runs that are already in the sheet
     const newRuns = detailedRuns.filter(run => {
         const urlParts = run.url.split('/');
         const idWithSuffix = urlParts[urlParts.length - 1]; // The ID with suffix is the last part of the URL
         const id = idWithSuffix.split('-')[0]; // Split by '-' and get the first part to get the actual ID
-
-        console.log('Run ID:', id); // Log the run ID
-        console.log('Is ID in existing IDs:', existingIds.includes(id)); // Log whether the ID is in the existing IDs
 
         return !existingIds.includes(id);
     });
@@ -77,7 +72,20 @@ async function fetchAndWriteData(characterName) {
         const character = run.details.roster.find(character => character.character.name.toLowerCase() === characterName.toLowerCase());
 
         // If the character was found, use its spec, otherwise use a default value
-        const spec = character ? character.character.spec.name : 'N/A';
+        const specName = character ? character.character.spec.name : 'N/A';
+        const className = character ? character.character.class.name : 'N/A';
+
+        // Create a mapping of class and spec names to the names you want to use
+        const nameMapping = {
+            'Death Knight': { 'Frost': 'FrostDK' },
+            'Paladin': { 'Holy': 'Hpal' },
+            'Warrior': { 'Protection': 'ProtW' },
+            'Druid': { 'Restoration': 'Rdrood' },
+            'Shaman': { 'Restoration': 'Rsham' }
+        };
+
+        // Get the name you want to use based on the class and spec
+        const spec = nameMapping[className] && nameMapping[className][specName] ? nameMapping[className][specName] : specName;
 
         // Sort the roster based on the role
         const sortedRoster = run.details.roster.sort((a, b) => {
@@ -85,15 +93,16 @@ async function fetchAndWriteData(characterName) {
             return roleOrder.indexOf(a.character.spec.role) - roleOrder.indexOf(b.character.spec.role);
         });
 
-        // Extract the specs
+        // Extract the characters
         const tankCharacter = sortedRoster.find(character => character.character.spec.role === 'tank');
-        const tankSpec = tankCharacter ? tankCharacter.character.spec.name : 'N/A';
-
         const healCharacter = sortedRoster.find(character => character.character.spec.role === 'healer');
-        const healSpec = healCharacter ? healCharacter.character.spec.name : 'N/A';
-
         const dpsCharacters = sortedRoster.filter(character => character.character.spec.role === 'dps');
-        const dpsSpecs = dpsCharacters.length > 0 ? dpsCharacters.map(character => character.character.spec.name) : ['N/A', 'N/A', 'N/A'];
+
+        // Get the spec names
+        const tankSpec = tankCharacter ? (nameMapping[tankCharacter.character.class.name] && nameMapping[tankCharacter.character.class.name][tankCharacter.character.spec.name] ? nameMapping[tankCharacter.character.class.name][tankCharacter.character.spec.name] : tankCharacter.character.spec.name) : 'N/A';
+        const healSpec = healCharacter ? (nameMapping[healCharacter.character.class.name] && nameMapping[healCharacter.character.class.name][healCharacter.character.spec.name] ? nameMapping[healCharacter.character.class.name][healCharacter.character.spec.name] : healCharacter.character.spec.name) : 'N/A';
+        const dpsSpecs = dpsCharacters.length > 0 ? dpsCharacters.map(character => nameMapping[character.character.class.name] && nameMapping[character.character.class.name][character.character.spec.name] ? nameMapping[character.character.class.name][character.character.spec.name] : character.character.spec.name) : ['N/A', 'N/A', 'N/A'];
+
 
         // Extract the date part from run.completed_at
         const datePart = run.completed_at.split('T')[0];
@@ -102,12 +111,15 @@ async function fetchAndWriteData(characterName) {
         const [year, month, day] = datePart.split('-');
 
         // Format the date in the MM/DD/YYYY format
-        const formattedDate = `${month}/${day}/${year}`;
+        const formattedDate = `'${month}/${day}/${year}`;
+
+        const num_chests = run.details.num_chests;
+        const status = num_chests === 3 ? "'+3" : num_chests === 2 ? "'+2" : num_chests === 1 ? "'+1" : 'deplete';
 
         return [
             '', // Empty cell for column A
             formattedDate, // Date for column B
-            run.details.status, // Result for column C
+            status, // Result for column C
             characterName.charAt(0).toUpperCase() + characterName.slice(1), // Character for column D
             spec, // Spec for column E
             run.short_name, // Dungeon abbreviated name for column F
