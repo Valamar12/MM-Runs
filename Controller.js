@@ -1,6 +1,7 @@
 // Controller.js
 const axios = require('axios');
 const runs = require('./Model.js');
+const utils = require('./utils.js');
 
 async function getCharRuns(characterName) {
     try {
@@ -14,13 +15,15 @@ async function getCharRuns(characterName) {
         });
         const recentRuns = response.data.mythic_plus_recent_runs;
         for (const run of recentRuns) {
-            runs.setData(run, characterName);
+            const runId = utils.extractRunId(run.url);
+            const runDetails = await getRunsDetails(runId);
+            runs.setData(run, runDetails, characterName, runId);
         }
     } catch (error) {
         console.error('Error fetching runs for ', characterName, ' :', error);
-        throw error; // Rethrow the error to handle it in the caller
     }
 }
+
 
 async function getRunsDetails(id) {
     try {
@@ -30,16 +33,14 @@ async function getRunsDetails(id) {
                 id: id,
             },
         });
-        const runDetails = response.data.run_details;
-        console.log(runDetails);
-        //runs.setData(runDetails);
+        const runDetails = response.data;
+        return runDetails;
     } catch (error) {
-        console.error('Error fetching runs details :', error);
-        throw error; // Rethrow the error to handle it in the caller
+        console.error('Error fetching runs details for id=', id, ':', error);
     }
 }
 
+
 module.exports = {
     getCharRuns,
-    getRunsDetails,
 };
