@@ -13,8 +13,8 @@ async function getCharRuns(characterName) {
             },
         });
         const recentRuns = response.data.mythic_plus_recent_runs;
-        for (const run in recentRuns) {
-            runs.setData(run);
+        for (const run of recentRuns) {
+            runs.setData(run, characterName);
         }
     } catch (error) {
         console.error('Error fetching runs for ', characterName, ' :', error);
