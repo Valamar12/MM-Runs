@@ -7,6 +7,8 @@ controller.getCharRuns('nialo').then(() => {
     console.log(run.getData()[9]);
 });
 
+controller.getRunsDetails(15876711)
+
 
 
 
