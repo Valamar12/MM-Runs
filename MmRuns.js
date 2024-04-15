@@ -3,9 +3,9 @@
 const run = require('./Model.js');
 const controller = require('./Controller.js');
 
-controller.getCharRuns('nialo')
-
-console.log(run.characterName)
+controller.getCharRuns('nialo').then(() => {
+    console.log(run.getData()[9]);
+});
 
 
 
