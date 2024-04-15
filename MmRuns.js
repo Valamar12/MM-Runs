@@ -1,8 +1,43 @@
-const axios = require('axios');
-const { google } = require('googleapis');
+//const axios = require('axios');
+//const { google } = require('googleapis');
+const run = require('./Model.js');
+const controller = require('./Controller.js');
 
+controller.getCharRuns('nialo')
+
+console.log(run.characterName)
+
+
+
+
+
+/*
 // Define the character names
 const characterNames = ['nialo', 'nialomd', 'nialodrd', 'ethernialo', 'nialodormu', 'nialofist', 'nialopal', 'nialoded', 'nialoshot', 'nialowr', 'nialosham', 'ashatara']; // Replace 'character2', 'character3', etc. with your actual character names
+
+// Season 3 week ranges
+const weekRanges = [
+    { week: 1, start: new Date('2023-11-15T05:00:00+01:00'), end: new Date('2023-11-22T05:00:00+01:00') },
+    { week: 2, start: new Date('2023-11-22T05:00:00+01:00'), end: new Date('2023-11-29T05:00:00+01:00') },
+    { week: 3, start: new Date('2023-11-29T05:00:00+01:00'), end: new Date('2023-12-06T05:00:00+01:00') },
+    { week: 4, start: new Date('2023-12-06T05:00:00+01:00'), end: new Date('2023-12-13T05:00:00+01:00') },
+    { week: 5, start: new Date('2023-12-13T05:00:00+01:00'), end: new Date('2023-12-20T05:00:00+01:00') },
+    { week: 6, start: new Date('2023-12-20T05:00:00+01:00'), end: new Date('2023-12-27T05:00:00+01:00') },
+    { week: 7, start: new Date('2023-12-27T05:00:00+01:00'), end: new Date('2024-01-03T05:00:00+01:00') },
+    { week: 8, start: new Date('2024-01-03T05:00:00+01:00'), end: new Date('2024-01-10T05:00:00+01:00') },
+    { week: 9, start: new Date('2024-01-10T05:00:00+01:00'), end: new Date('2024-01-17T05:00:00+01:00') },
+    { week: 10, start: new Date('2024-01-17T05:00:00+01:00'), end: new Date('2024-01-24T05:00:00+01:00') },
+    { week: 1, start: new Date('2024-01-24T05:00:00+01:00'), end: new Date('2024-01-31T05:00:00+01:00') },
+    { week: 2, start: new Date('2024-01-31T05:00:00+01:00'), end: new Date('2024-02-07T05:00:00+01:00') },
+    { week: 3, start: new Date('2024-02-07T05:00:00+01:00'), end: new Date('2024-02-14T05:00:00+01:00') },
+    { week: 4, start: new Date('2024-02-14T05:00:00+01:00'), end: new Date('2024-02-21T05:00:00+01:00') },
+    { week: 5, start: new Date('2024-02-21T05:00:00+01:00'), end: new Date('2024-02-28T05:00:00+01:00') },
+    { week: 6, start: new Date('2024-02-28T05:00:00+01:00'), end: new Date('2024-03-07T05:00:00+01:00') },
+    { week: 7, start: new Date('2024-03-07T05:00:00+01:00'), end: new Date('2024-03-14T05:00:00+01:00') },
+    { week: 8, start: new Date('2024-03-14T05:00:00+01:00'), end: new Date('2024-03-21T05:00:00+01:00') },
+    { week: 9, start: new Date('2024-03-21T05:00:00+01:00'), end: new Date('2024-03-28T05:00:00+01:00') },
+    { week: 10, start: new Date('2024-03-28T05:00:00+01:00'), end: new Date('2024-04-04T05:00:00+01:00') },
+];
 
 // Define an async function
 async function fetchAndWriteData(characterName) {
@@ -34,6 +69,11 @@ async function fetchAndWriteData(characterName) {
 
         // Add the character's spec to the run object
         run.spec = character ? character.character.spec.name : 'N/A';
+
+        // Find the week range for the "completed_at" date
+        const completedAt = new Date(response.data.completed_at);
+        const weekRange = weekRanges.find(range => completedAt >= range.start && completedAt < range.end);
+        run.week = weekRange ? weekRange.week : 'N/A';
 
         // Include the id in the returned object
         return { ...run, id: id, details: response.data };
@@ -116,48 +156,63 @@ async function fetchAndWriteData(characterName) {
         const num_chests = run.details.num_chests;
         const status = num_chests === 3 ? "'+3" : num_chests === 2 ? "'+2" : num_chests === 1 ? "'+1" : 'deplete';
 
-        return [
-            '', // Empty cell for column A
-            formattedDate, // Date for column B
-            status, // Result for column C
-            characterName.charAt(0).toUpperCase() + characterName.slice(1), // Character for column D
-            spec, // Spec for column E
-            run.short_name, // Dungeon abbreviated name for column F
-            run.mythic_level, // Dungeon level for column G
-            tankSpec, // Tank spec for column F
-            healSpec, // Healer spec for column G
-            ...dpsSpecs, // DPS specs for columns H, I, J
-            '',
-            run.id,
-            // Add more fields as needed
-        ];
+        return {
+            runData: [
+                '', // Empty cell for column A
+                formattedDate, // Date for column B
+                status, // Result for column C
+                characterName.charAt(0).toUpperCase() + characterName.slice(1), // Character for column D
+                spec, // Spec for column E
+                run.short_name, // Dungeon abbreviated name for column F
+                run.mythic_level, // Dungeon level for column G
+                tankSpec, // Tank spec for column F
+                healSpec, // Healer spec for column G
+                ...dpsSpecs, // DPS specs for columns H, I, J
+                '',
+                run.id,
+                // Add more fields as needed
+            ],
+        };
     });
-
-    // Write data to the sheet
+    // get data to the sheet
     const resp = await googleSheets.spreadsheets.values.get({
         spreadsheetId: '16EydzkYMnzvhC7Ddyl9yojYF8Zk88fW71bc_DtR_Li8', // Replace with your spreadsheet ID
-        range: 'DFS3!A:E', // Update based on your needs
+        range: 'DFS3!A1:Z', // Update based on your needs
     });
 
-    const numRows = resp.data.values ? resp.data.values.length : 0;
-    const startRow = numRows + 1; // Add 1 because spreadsheet rows are 1-indexed
+    // Loop over the weekRanges array
+    for (let i = 0; i < weekRanges.length; i++) {
+        // Filter runs that are in the current week
+        const currentWeekRuns = detailedRuns.filter(run => run.week === weekRanges[i].week);
 
-    for (const data of values) {
-        if (!existingIds.includes(data[data.length - 1])) { // Assuming the last element is run.id
-            await googleSheets.spreadsheets.values.append({
-                spreadsheetId: '16EydzkYMnzvhC7Ddyl9yojYF8Zk88fW71bc_DtR_Li8',
-                range: `DFS3!A${startRow}`,
-                valueInputOption: 'USER_ENTERED',
-                insertDataOption: 'INSERT_ROWS',
-                resource: {
-                    values: [data],
-                },
-            });
+        // Find the row number of the separator for the next week
+        const nextWeekSeparatorRow = resp.data.values.findIndex(row => row[0] === `Week ${weekRanges[i].week + 1}`);
+
+        // If the separator for the next week is not found, append the run at the end of the sheet
+        const startRow = nextWeekSeparatorRow !== -1 ? nextWeekSeparatorRow : resp.data.values.length + 1;
+
+        // write data to the sheet
+        for (const data of values) {
+            if (!existingIds.includes(data[data.length - 1])) { // Assuming the last element is run.id
+                await googleSheets.spreadsheets.values.append({
+                    spreadsheetId: '16EydzkYMnzvhC7Ddyl9yojYF8Zk88fW71bc_DtR_Li8',
+                    range: `DFS3!A${startRow + index}`,
+                    valueInputOption: 'USER_ENTERED',
+                    insertDataOption: 'INSERT_ROWS',
+                    resource: {
+                        values: [data],
+                    },
+                });
+            }
         }
+    } else {
+        console.log('Run does not fall within any week range');
     }
 }
-// Loop over the character names
-for (const characterName of characterNames) {
-    // Call the async function
-    fetchAndWriteData(characterName).catch(console.error);
-}
+
+    // Loop over the character names
+    for (const characterName of characterNames) {
+        // Call the async function
+        fetchAndWriteData(characterName).catch(console.error);
+    }*/
+
