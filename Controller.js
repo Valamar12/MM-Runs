@@ -14,6 +14,10 @@ async function getCharRuns(characterName) {
             },
         });
         const recentRuns = response.data.mythic_plus_recent_runs;
+        if (recentRuns.length === 0) {
+            console.log(`No recent runs found for ${characterName}.`);
+            return;
+        }
         for (const run of recentRuns) {
             const runId = utils.extractRunId(run.url);
             const runDetails = await getRunsDetails(runId);
@@ -23,6 +27,7 @@ async function getCharRuns(characterName) {
         console.error('Error fetching runs for ', characterName, ' :', error);
     }
 }
+
 
 
 async function getRunsDetails(id) {

@@ -5,83 +5,96 @@ const controller = require('./Controller.js');
 const utils = require('./utils.js');
 require('dotenv').config();
 
+//const characterNamesString = process.env.CHARACTER_NAMES || ''; // Retrieve the string representation of the array
+//const characterNames = characterNamesString.split(','); // Convert the string to an array using split(',')
 
-controller.getCharRuns('nialo').then(() => {
-    console.log(run.getData()[2]);
-});
-
-// Define the character names
-const characterNames = ['nialo', 'nialomd', 'nialodrd', 'ethernialo', 'nialodormu', 'nialofist', 'nialopal', 'nialoded', 'nialoshot', 'nialowr', 'nialosham', 'ashatara']; // Replace 'character2', 'character3', etc. with your actual character names
-
-
-// Authenticate with Google Sheets API
-const auth = new google.auth.GoogleAuth({
-    keyFile: '/Users/Nialoshaar/Desktop/Git/MM-Runs/mm-runs-53edb4f66eb4.json', // Replace with path to your service account file
-    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-});
-const client = await auth.getClient();
-const googleSheets = google.sheets({ version: 'v4', auth: client });
-
-
-// Fetch existing IDs from the sheet
-const idResponse = await googleSheets.spreadsheets.values.get({
-    spreadsheetId: '16EydzkYMnzvhC7Ddyl9yojYF8Zk88fW71bc_DtR_Li8', // Replace with your spreadsheet ID
-    range: 'DFS3!N:N', // Update based on your needs
-});
-
-// Convert the response to a flat array of IDs
-const existingIds = idResponse.data.values ? idResponse.data.values.flat() : [];
-
-// Filter out runs that are already in the sheet
-const newRuns = detailedRuns.filter(run => {
-    const id = utils.extractRunId(run.url);
-    return !existingIds.includes(id);
-});
-
-// Format data for Google Sheets
-const values = detailedRuns.map(run => {
-    // Extract the characters
-    const tankCharacter = run.character.find(character => character.character.role === 'tank');
-    const healCharacter = run.character.find(character => character.character.role === 'healer');
-    const dpsCharacter = run.character.filter(character => character.role === 'dps');
-
-    return {
-        runData: [
+//for (const characterName of characterNames) {
+controller.getCharRuns('nialofist').then(() => {
+    const runData = run.getData(); // Retrieve the data from the model
+    const values = runData.map(run => {
+        return [
             '', // Empty cell for column A
-            formattedDate, // Date for column B
-            status, // Result for column C
-            characterName.charAt(0).toUpperCase() + characterName.slice(1), // Character for column D
-            spec, // Spec for column E
-            run.short_name, // Dungeon abbreviated name for column F
-            run.mythic_level, // Dungeon level for column G
-            tankCharacter.spec, // Tank spec for column F
-            healCharacter.spec, // Healer spec for column G
-            dpsCharacter[0], // DPS specs for columns H, I, J
-            dpsCharacter[1],
-            dpsCharacter[2],
-            '',
-            run.id,
+            utils.formatDate(run.date), // Date for column B
+            utils.convertNumChests(run.numChests), // Result for column C (assuming you have a function to convert numChests)
+            run.characterName, // Character for column D
+            run.characterSpec, // Spec for column E
+            run.dungeon, // Dungeon abbreviated name for column F
+            run.level, // Dungeon level for column G
+            run.tank, // Tank spec for column F
+            run.healer, // Healer spec for column G
+            run.dps1, // DPS specs for columns H, I, J
+            run.dps2,
+            run.dps3,
+            '', // Placeholder for additional fields
+            run.runId,
+            run.week,
             // Add more fields as needed
-        ],
-    };
+        ];
+    });
+    writeToSheet(values); // Call the writeToSheet function with the values array
 });
+//}
 
-// get ids from the sheet
-const resp = await googleSheets.spreadsheets.values.get({
-    spreadsheetId: process.env.SPREADSHEET_ID,
-    range: 'DFS3!A1:Z',
-});
-// write data to the sheet if id is not found
-for (const data of values) {
-    if (!existingIds.includes(data[data.length - 1])) { // Assuming the last element is run.id
-        await googleSheets.spreadsheets.values.append({
-            spreadsheetId: process.env.SPREADSHEET_ID,
-            range: `DFS3!A${startRow + index}`,
-            valueInputOption: 'USER_ENTERED',
-            insertDataOption: 'INSERT_ROWS',
-            resource: {
-                values: [data],
-            },
+async function connectToSheet() {
+    // Authenticate with Google Sheets
+    const auth = new google.auth.GoogleAuth({
+        keyFile: process.env.KEYFILE, // Replace with path to your service account file
+        scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+    const client = await auth.getClient();
+    return google.sheets({ version: 'v4', auth: client });
+}
+
+async function getExistingRunsID() {
+    // Fetch IDs for runs already the sheet
+    googleSheets = await connectToSheet();
+    const idResponse = await googleSheets.spreadsheets.values.get({
+        spreadsheetId: process.env.SPREADSHEET_ID, // Replace with your spreadsheet ID
+        range: 'DFS3!N:N', // Update based on your needs
+    });
+    const existingIds = idResponse.data.values ? idResponse.data.values.flat() : [];
+    return existingIds;
+}
+
+function getLastFilledRow(resp, startRow, endRow) {
+
+    // Initialize lastFilledRow to -1 (assuming no filled rows initially)
+    let lastFilledRow = -1;
+
+    for (let i = startRow - 1; i < endRow; i++) {
+        // Check if any cell in the current row is not empty
+        if (resp.data.values[i].some(cellValue => cellValue !== "")) {
+            return lastFilledRow = i + 3; // Update lastFilledRow based on zero-based indexing
+        }
+    }
+}
+
+
+async function writeToSheet(values) {
+    existingIds = await getExistingRunsID();
+    for (const data of values) {
+        googleSheets = await connectToSheet();
+        const resp = await googleSheets.spreadsheets.values.get({
+            spreadsheetId: process.env.SPREADSHEET_ID, // Replace with your spreadsheet ID
+            range: `${process.env.TAB_NAME}!A:E`, // Update based on your needs
         });
+        if (!existingIds.includes(data[data.length - 1])) { // Assuming the last element is run.id
+            const weekNumber1 = parseInt(data[data.length - 1]);
+            const weekNumber2 = weekNumber1 + 1;
+            currentWeekRow = resp.data.values.findIndex(row => row.includes("Week " + weekNumber1));
+            currentWeekRow = parseInt(currentWeekRow) + 1;
+            // Find the index of the next "Week" row by starting the search from the currentWeekRow + 1
+            nextWeekRow = resp.data.values.findIndex(row => row.includes("Week " + weekNumber2));
+            var lastFilledRow = getLastFilledRow(resp, currentWeekRow, nextWeekRow);
+            await googleSheets.spreadsheets.values.append({
+                spreadsheetId: process.env.SPREADSHEET_ID,
+                range: `${process.env.TAB_NAME}!A${lastFilledRow}`,
+                valueInputOption: 'USER_ENTERED',
+                insertDataOption: 'INSERT_ROWS',
+                resource: {
+                    values: [data],
+                },
+            });
+        }
     }
 }
