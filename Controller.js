@@ -18,6 +18,7 @@ async function getCharRuns(characterName) {
             console.log(`No recent runs found for ${characterName}.`);
             return;
         }
+        console.log(`${recentRuns.length} runs found for ${characterName}.`);
         for (const run of recentRuns) {
             const runId = utils.extractRunId(run.url);
             const runDetails = await getRunsDetails(runId);

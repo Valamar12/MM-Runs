@@ -5,35 +5,38 @@ const controller = require('./Controller.js');
 const utils = require('./utils.js');
 require('dotenv').config();
 
-//const characterNamesString = process.env.CHARACTER_NAMES || ''; // Retrieve the string representation of the array
-//const characterNames = characterNamesString.split(','); // Convert the string to an array using split(',')
+const characterNamesString = process.env.CHARACTER_NAMES || ''; // Retrieve the string representation of the array
+const characterNames = characterNamesString.split(','); // Convert the string to an array using split(',')
+processCharacterRuns(characterNames)
 
-//for (const characterName of characterNames) {
-controller.getCharRuns('nialofist').then(() => {
-    const runData = run.getData(); // Retrieve the data from the model
-    const values = runData.map(run => {
-        return [
-            '', // Empty cell for column A
-            utils.formatDate(run.date), // Date for column B
-            utils.convertNumChests(run.numChests), // Result for column C (assuming you have a function to convert numChests)
-            run.characterName, // Character for column D
-            run.characterSpec, // Spec for column E
-            run.dungeon, // Dungeon abbreviated name for column F
-            run.level, // Dungeon level for column G
-            run.tank, // Tank spec for column F
-            run.healer, // Healer spec for column G
-            run.dps1, // DPS specs for columns H, I, J
-            run.dps2,
-            run.dps3,
-            '', // Placeholder for additional fields
-            run.runId,
-            run.week,
-            // Add more fields as needed
-        ];
-    });
-    writeToSheet(values); // Call the writeToSheet function with the values array
-});
-//}
+async function processCharacterRuns(characterNames) {
+    for (const characterName of characterNames) {
+        await controller.getCharRuns(characterName)
+        const runData = run.getData(); // Retrieve the data from the model
+        const values = runData.map(run => {
+            return [
+                '', // Empty cell for column A
+                utils.formatDate(run.date), // Date for column B
+                utils.convertNumChests(run.numChests), // Result for column C (assuming you have a function to convert numChests)
+                run.characterName, // Character for column D
+                run.characterSpec, // Spec for column E
+                run.dungeon, // Dungeon abbreviated name for column F
+                run.level, // Dungeon level for column G
+                run.tank, // Tank spec for column F
+                run.healer, // Healer spec for column G
+                run.dps1, // DPS specs for columns H, I, J
+                run.dps2,
+                run.dps3,
+                '', // Placeholder for additional fields
+                run.runId,
+                run.week,
+                // Add more fields as needed
+            ];
+        });
+        await writeToSheet(values); // Call the writeToSheet function with the values array
+    };
+}
+
 
 async function connectToSheet() {
     // Authenticate with Google Sheets
@@ -71,14 +74,17 @@ function getLastFilledRow(resp, startRow, endRow) {
 
 
 async function writeToSheet(values) {
-    existingIds = await getExistingRunsID();
+    let existingIds = await getExistingRunsID();
     for (const data of values) {
-        googleSheets = await connectToSheet();
-        const resp = await googleSheets.spreadsheets.values.get({
-            spreadsheetId: process.env.SPREADSHEET_ID, // Replace with your spreadsheet ID
-            range: `${process.env.TAB_NAME}!A:E`, // Update based on your needs
-        });
-        if (!existingIds.includes(data[data.length - 1])) { // Assuming the last element is run.id
+        if (existingIds.includes(data[data.length - 2])) {
+            console.log(`Run ${data[data.length - 2]} for ${data[data.length - 12]} already exists in the sheet... Skipping.`)
+        }
+        else {
+            googleSheets = await connectToSheet();
+            const resp = await googleSheets.spreadsheets.values.get({
+                spreadsheetId: process.env.SPREADSHEET_ID, // Replace with your spreadsheet ID
+                range: `${process.env.TAB_NAME}!A:E`, // Update based on your needs
+            });// Assuming the last element is run.id
             const weekNumber1 = parseInt(data[data.length - 1]);
             const weekNumber2 = weekNumber1 + 1;
             currentWeekRow = resp.data.values.findIndex(row => row.includes("Week " + weekNumber1));
@@ -95,6 +101,8 @@ async function writeToSheet(values) {
                     values: [data],
                 },
             });
+            existingIds.push(data[data.length - 2])
+            console.log(`Run ${data[data.length - 2]} for ${data[data.length - 12]} added to the sheet.`)
         }
     }
 }

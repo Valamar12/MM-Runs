@@ -48,9 +48,27 @@ function assignRunToWeek(dateString) {
     return weekNumber;
 }
 
+function convertSpecDoublons(className, spec) {
+    const nameMapping = {
+        'Death Knight': { 'Frost': 'FrostDK' },
+        'Paladin': { 'Holy': 'Hpal' },
+        'Warrior': { 'Protection': 'ProtW' },
+        'Druid': { 'Restoration': 'Rdrood' },
+        'Shaman': { 'Restoration': 'Rsham' }
+    };
+
+    // Check if the provided class and spec combination exists in the nameMapping
+    if (nameMapping[className] && nameMapping[className][spec]) {
+        return nameMapping[className][spec]; // Return the mapped spec name
+    } else {
+        return spec; // Return the initial spec name
+    }
+}
+
 module.exports = {
     extractRunId,
     formatDate,
     convertNumChests,
     assignRunToWeek,
+    convertSpecDoublons,
 };
