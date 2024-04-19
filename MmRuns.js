@@ -1,4 +1,3 @@
-const axios = require('axios');
 const { google } = require('googleapis');
 const run = require('./Model.js');
 const controller = require('./Controller.js');
@@ -36,7 +35,6 @@ async function processCharacterRuns(characterNames) {
         await writeToSheet(values); // Call the writeToSheet function with the values array
     };
 }
-
 
 async function connectToSheet() {
     // Authenticate with Google Sheets
