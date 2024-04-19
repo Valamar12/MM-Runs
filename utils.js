@@ -25,7 +25,7 @@ function convertNumChests(numChests) {
         case 3:
             return "'+3";
         default:
-            return 'depleted';
+            return 'Depleted';
     }
 }
 
