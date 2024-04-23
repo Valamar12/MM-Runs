@@ -21,7 +21,9 @@ class RunModel {
         const dps3Spec = utils.convertSpecDoublons(dps[2].character.class.name, dps[2].character.spec.name) || 'Unknown'
         const upperCaseCharName = characterName.charAt(0).toUpperCase() + characterName.slice(1);
         const mychar = runDetails.roster.find(character => character.character.name === upperCaseCharName);
-        const mycharSpec = mychar.character.spec ? mychar.character.spec.name : 'Unknown';
+        const mycharSpec = mychar.character.spec
+            ? utils.convertSpecDoublons(mychar.character.class.name, mychar.character.spec.name)
+            : 'Unknown';
 
 
         const recentRun = {

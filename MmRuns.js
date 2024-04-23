@@ -1,5 +1,5 @@
 const { google } = require('googleapis');
-const run = require('./Model.js');
+const runModel = require('./Model.js');
 const controller = require('./Controller.js');
 const utils = require('./utils.js');
 require('dotenv').config();
@@ -9,30 +9,31 @@ const characterNames = characterNamesString.split(','); // Convert the string to
 processCharacterRuns(characterNames)
 
 async function processCharacterRuns(characterNames) {
+    let existingIds = await getExistingRunsID();
     for (const characterName of characterNames) {
-        await controller.getCharRuns(characterName)
-        const runData = run.getData(); // Retrieve the data from the model
-        const values = runData.map(run => {
+        await controller.getCharRuns(characterName, existingIds);
+        const runData = runModel.getData(); // Retrieve the data from the model
+        const values = runData.map(runModel => {
             return [
                 '', // Empty cell for column A
-                utils.formatDate(run.date), // Date for column B
-                utils.convertNumChests(run.numChests), // Result for column C (assuming you have a function to convert numChests)
-                run.characterName, // Character for column D
-                run.characterSpec, // Spec for column E
-                run.dungeon, // Dungeon abbreviated name for column F
-                run.level, // Dungeon level for column G
-                run.tank, // Tank spec for column F
-                run.healer, // Healer spec for column G
-                run.dps1, // DPS specs for columns H, I, J
-                run.dps2,
-                run.dps3,
+                utils.formatDate(runModel.date), // Date for column B
+                utils.convertNumChests(runModel.numChests), // Result for column C (assuming you have a function to convert numChests)
+                runModel.characterName, // Character for column D
+                runModel.characterSpec, // Spec for column E
+                runModel.dungeon, // Dungeon abbreviated name for column F
+                runModel.level, // Dungeon level for column G
+                runModel.tank, // Tank spec for column F
+                runModel.healer, // Healer spec for column G
+                runModel.dps1, // DPS specs for columns H, I, J
+                runModel.dps2,
+                runModel.dps3,
                 '', // Placeholder for additional fields
-                run.runId,
-                run.week,
+                runModel.runId,
+                runModel.week,
                 // Add more fields as needed
             ];
         });
-        await writeToSheet(values); // Call the writeToSheet function with the values array
+        await writeToSheet(values, existingIds); // Call the writeToSheet function with the values array
     };
 }
 
@@ -58,10 +59,6 @@ async function getExistingRunsID() {
 }
 
 function getLastFilledRow(resp, startRow, endRow) {
-
-    // Initialize lastFilledRow to -1 (assuming no filled rows initially)
-    let lastFilledRow = -1;
-
     for (let i = startRow - 1; i < endRow; i++) {
         // Check if any cell in the current row is not empty
         if (resp.data.values[i].some(cellValue => cellValue !== "")) {
@@ -71,18 +68,17 @@ function getLastFilledRow(resp, startRow, endRow) {
 }
 
 
-async function writeToSheet(values) {
-    let existingIds = await getExistingRunsID();
+async function writeToSheet(values, existingIds) {
     for (const data of values) {
         if (existingIds.includes(data[data.length - 2])) {
-            console.log(`Run ${data[data.length - 2]} for ${data[data.length - 12]} already exists in the sheet... Skipping.`)
+            continue;
         }
         else {
             googleSheets = await connectToSheet();
             const resp = await googleSheets.spreadsheets.values.get({
                 spreadsheetId: process.env.SPREADSHEET_ID, // Replace with your spreadsheet ID
                 range: `${process.env.TAB_NAME}!A:E`, // Update based on your needs
-            });// Assuming the last element is run.id
+            });// Assuming the last element is runModel.id
             const weekNumber1 = parseInt(data[data.length - 1]);
             const weekNumber2 = weekNumber1 + 1;
             currentWeekRow = resp.data.values.findIndex(row => row.includes("Week " + weekNumber1));
@@ -100,7 +96,7 @@ async function writeToSheet(values) {
                 },
             });
             existingIds.push(data[data.length - 2])
-            console.log(`Run ${data[data.length - 2]} for ${data[data.length - 12]} added to the sheet.`)
+            console.log(`runModel ${data[data.length - 2]} for ${data[data.length - 12]} added to the sheet.`)
         }
     }
 }

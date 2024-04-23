@@ -2,8 +2,9 @@
 const axios = require('axios');
 const runs = require('./Model.js');
 const utils = require('./utils.js');
+const { recaptchaenterprise } = require('googleapis/build/src/apis/recaptchaenterprise/index.js');
 
-async function getCharRuns(characterName) {
+async function getCharRuns(characterName, existingIds) {
     try {
         const response = await axios.get('https://raider.io/api/v1/characters/profile', {
             params: {
@@ -19,10 +20,19 @@ async function getCharRuns(characterName) {
             return;
         }
         console.log(`${recentRuns.length} runs found for ${characterName}.`);
-        for (const run of recentRuns) {
+        for (let i = 0; i < recentRuns.length; i++) {
+            const run = recentRuns[i];
             const runId = utils.extractRunId(run.url);
-            const runDetails = await getRunsDetails(runId);
-            runs.setData(run, runDetails, characterName, runId);
+
+            if (existingIds.includes(runId)) {
+                console.log(`Run ${runId} for ${characterName} already exists in the sheet... Skipping`);
+                recentRuns.splice(i, 1);
+                i--;
+            }
+            else {
+                const runDetails = await getRunsDetails(runId);
+                runs.setData(run, runDetails, characterName, runId);
+            }
         }
     } catch (error) {
         console.error('Error fetching runs for ', characterName, ' :', error);
