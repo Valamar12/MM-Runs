@@ -52,7 +52,7 @@ async function getExistingRunsID() {
     googleSheets = await connectToSheet();
     const idResponse = await googleSheets.spreadsheets.values.get({
         spreadsheetId: process.env.SPREADSHEET_ID, // Replace with your spreadsheet ID
-        range: 'DFS3!N:N', // Update based on your needs
+        range: `${process.env.TAB_NAME}!N:N`, // Update based on your needs
     });
     const existingIds = idResponse.data.values ? idResponse.data.values.flat() : [];
     return existingIds;
