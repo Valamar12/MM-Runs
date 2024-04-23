@@ -31,7 +31,7 @@ function convertNumChests(numChests) {
 
 function assignRunToWeek(dateString) {
     // Define the start date and time of the first week
-    const startDate = new Date('2023-11-14T06:00:00Z'); // Wednesday, November 14, 2023, 6:00 AM GMT+2
+    const startDate = new Date('2024-04-23T06:00:00Z'); // Wednesday, November 14, 2023, 6:00 AM GMT+2
 
     // Convert the provided date string to a Date object
     const date = new Date(dateString);
