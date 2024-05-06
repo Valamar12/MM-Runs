@@ -45,7 +45,7 @@ async function getRunsDetails(id) {
     try {
         const response = await axios.get('https://raider.io/api/v1/mythic-plus/run-details', {
             params: {
-                season: 'season-df-3',
+                season: 'season-df-4',
                 id: id,
             },
         });
